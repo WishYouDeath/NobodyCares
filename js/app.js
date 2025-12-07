@@ -28,6 +28,10 @@ const totalCountBottomEl = document.getElementById('total-count-bottom');
 const progressPercentBottomEl = document.getElementById('progress-percent-bottom');
 const accuracyPercentBottomEl = document.getElementById('accuracy-percent-bottom');
 
+let allQuestions = [...sampleQuestions]; // Сохраняем все вопросы
+let isFinalTest = false;
+let finalTestQuestions = [];
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeEventListeners();
     initializeQuestionStates();
@@ -40,6 +44,10 @@ function initializeEventListeners() {
     shuffleBottomBtn.addEventListener('click', shuffleQuestions);
     resetBtn.addEventListener('click', resetAnswers);
     resetBottomBtn.addEventListener('click', resetAnswers);
+    
+    // Новые кнопки
+    document.getElementById('generate-final-test-btn').addEventListener('click', generateFinalTest);
+    document.getElementById('return-to-training-btn').addEventListener('click', returnToTraining);
 }
 
 function initializeQuestionStates() {
@@ -70,8 +78,145 @@ function initializeQuestionStates() {
     });
 }
 
+// Функция для генерации итогового теста
+function generateFinalTest() {
+    // Определяем темы и их диапазоны
+    const topics = [
+        { name: 'Тема 1', start: 1, end: 26 },
+        { name: 'Тема 2', start: 27, end: 50 },
+        { name: 'Тема 3', start: 51, end: 74 },
+        { name: 'Тема 4', start: 75, end: 99 },
+        { name: 'Тема 5', start: 100, end: 124 },
+        { name: 'Тема 6', start: 125, end: 146 },
+        { name: 'Тема 7', start: 147, end: 170 },
+        { name: 'Тема 8', start: 171, end: 190 }
+    ];
+    
+    finalTestQuestions = [];
+    
+    // Для каждой темы выбираем примерно по 6-7 вопросов (50/8 ≈ 6.25)
+    topics.forEach(topic => {
+        const topicQuestions = allQuestions.filter(q => q.id >= topic.start && q.id <= topic.end);
+        const questionsInTopic = topicQuestions.length;
+        
+        // Вычисляем сколько вопросов взять из этой темы (примерно 6-7)
+        // Берем примерно каждый 4-й вопрос из темы
+        const questionsToTake = Math.min(Math.ceil(questionsInTopic / 4), 7);
+        
+        // Если в теме мало вопросов, берем все
+        if (questionsInTopic <= questionsToTake) {
+            finalTestQuestions = finalTestQuestions.concat(topicQuestions);
+        } else {
+            // Выбираем случайные вопросы из темы
+            const shuffled = shuffleArray([...topicQuestions]);
+            finalTestQuestions = finalTestQuestions.concat(shuffled.slice(0, questionsToTake));
+        }
+    });
+    
+    // Если выбрали меньше 50 вопросов, добавляем еще случайных
+    if (finalTestQuestions.length < 50) {
+        const remaining = 50 - finalTestQuestions.length;
+        const allQuestionsCopy = [...allQuestions];
+        
+        // Убираем уже выбранные вопросы
+        const finalTestIds = finalTestQuestions.map(q => q.id);
+        const availableQuestions = allQuestionsCopy.filter(q => !finalTestIds.includes(q.id));
+        
+        // Выбираем случайные из оставшихся
+        const additionalQuestions = shuffleArray(availableQuestions).slice(0, remaining);
+        finalTestQuestions = finalTestQuestions.concat(additionalQuestions);
+    }
+    
+    // Если больше 50, обрезаем
+    if (finalTestQuestions.length > 50) {
+        finalTestQuestions = finalTestQuestions.slice(0, 50);
+    }
+
+    resetAnswers();
+    
+    // Перемешиваем все вопросы итогового теста
+    finalTestQuestions = shuffleArray(finalTestQuestions);
+    
+    // Устанавливаем флаг итогового теста
+    isFinalTest = true;
+    
+    // Обновляем вопросы
+    questions = finalTestQuestions;
+    
+    // Сбрасываем ответы и статистику
+    userAnswers = {};
+    initializeQuestionStates();
+    
+    // Обновляем отображение
+    updateUIForFinalTest();
+    displayQuestions();
+    updateStats();
+}
+
+// Функция для возврата к тренировке
+function returnToTraining() {
+    isFinalTest = false;
+    questions = [...allQuestions];
+    
+    // Сбрасываем ответы и статистику
+    resetAnswers();
+    userAnswers = {};
+    initializeQuestionStates();
+    
+    // Обновляем отображение
+    updateUIForTraining();
+    displayQuestions();
+    updateStats();
+}
+
+// Обновление UI для итогового теста
+function updateUIForFinalTest() {
+    // Меняем заголовок
+    const title = document.querySelector('h1');
+    if (title) {
+        title.innerHTML = 'Итоговый тест (50 вопросов)';
+    }
+    
+    // Показываем/скрываем кнопки
+    document.getElementById('generate-final-test-btn').classList.add('hidden');
+    document.getElementById('return-to-training-btn').classList.remove('hidden');
+    
+    // Можно также добавить специальный индикатор
+    const testSection = document.getElementById('test-section');
+    if (testSection) {
+        testSection.classList.add('final-test');
+    }
+}
+
+// Обновление UI для тренировки
+function updateUIForTraining() {
+    // Возвращаем заголовок
+    const title = document.querySelector('h1');
+    if (title) {
+        title.innerHTML = 'Вопросы по сетям';
+    }
+    
+    // Показываем/скрываем кнопки
+    document.getElementById('generate-final-test-btn').classList.remove('hidden');
+    document.getElementById('return-to-training-btn').classList.add('hidden');
+    
+    // Убираем индикатор итогового теста
+    const testSection = document.getElementById('test-section');
+    if (testSection) {
+        testSection.classList.remove('final-test');
+    }
+}
+
 function displayQuestions() {
     questionsContainer.innerHTML = '';
+    
+    // Добавим заголовок с информацией о режиме
+    if (isFinalTest) {
+        const titleElement = document.createElement('div');
+        titleElement.className = 'test-title';
+        titleElement.textContent = `Итоговый тест: ${questions.length} вопросов`;
+        questionsContainer.appendChild(titleElement);
+    }
     
     questions.forEach((question, index) => {
         const questionState = questionStates[question.id];
@@ -93,8 +238,42 @@ function createQuestionElement(question, questionState, index) {
         questionElement.classList.add(questionState.correct ? 'correct' : 'incorrect');
     }
     
+    // Показываем оригинальный номер вопроса в итоговом тесте
+    let questionNumberText;
+    if (isFinalTest) {
+        questionNumberText = `Вопрос ${index + 1} из ${questions.length} (оригинальный №${question.id})`;
+    } else {
+        questionNumberText = `Вопрос ${index + 1} из ${questions.length}`;
+    }
+    
     questionElement.dataset.id = question.id;
-    questionElement.innerHTML = generateQuestionHTML(question, questionState, index);
+    questionElement.dataset.originalId = question.id;
+    
+    // Генерируем HTML с учетом нового формата номера
+    const statusInfo = getStatusInfo(questionState);
+    
+    let questionHTML = `
+        <div class="question-number">
+            ${questionNumberText}
+            <span class="question-status ${statusInfo.class}">${statusInfo.text}</span>
+        </div>
+        <div class="question-text">${question.text}</div>
+    `;
+    
+    if (question.image) {
+        const imagePath = getImagePath(question.image);
+        questionHTML += `<img src="${imagePath}" alt="Изображение для вопроса" class="question-image" onerror="this.style.display='none'">`;
+    }
+    
+    questionHTML += `<div class="options">`;
+    questionHTML += generateOptionsHTML(question, questionState);
+    questionHTML += `</div>`;
+    
+    if (question.type === 'input' && questionState.answered && !questionState.correct) {
+        questionHTML += `<div class="correct-answer-text"><strong>Правильный ответ:</strong> ${question.correctAnswer}</div>`;
+    }
+    
+    questionElement.innerHTML = questionHTML;
     
     return questionElement;
 }

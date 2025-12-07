@@ -411,3 +411,35 @@ h1 {
         margin-top: 30px;
     }
 }
+
+.final-test-controls {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.test-title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    color: #2c3e50;
+}
+
+.final-test .question {
+    border-left: 4px solid #3498db;
+}
+
+.question-number small {
+    font-size: 0.8em;
+    color: #7f8c8d;
+    margin-left: 5px;
+}
+
+.test-title {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: bold;
+    border-left: 5px solid #3498db;
+}
