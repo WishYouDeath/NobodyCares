@@ -340,7 +340,7 @@ const sampleQuestions = [
             { question: 'Cisco реализация стандарта IEEE 802.1D', answer: 'PVST+' },
             { question: 'Стандарт IEEE, сокращающий количество экземпляров STP', answer: 'MSTP' }
         ],
-        extraAnswers: ['STP', 'PVST', 'Rapid STP']
+        extraAnswers: ['STP', 'PVST']
     },
     {
         id: 31,

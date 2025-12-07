@@ -217,9 +217,6 @@ function generateMatchingHTML(question, questionState) {
     const shuffledAnswers = questionState.shuffledAnswers || 
         [...question.pairs.map(pair => pair.answer), ...(question.extraAnswers || [])];
     
-    // Получаем уже использованные ответы
-    const usedAnswers = Object.values(userSelections).filter(answer => answer);
-    
     let matchingHTML = '<div class="matching-container">';
     
     question.pairs.forEach((pair, index) => {
@@ -237,18 +234,12 @@ function generateMatchingHTML(question, questionState) {
         }
         
         // Формируем опции для select из сохраненного перемешанного порядка
+        // ВСЕ варианты всегда показываются, даже если уже выбраны
         let optionsHTML = '<option value="">-- Выберите ответ --</option>';
         
         shuffledAnswers.forEach(answer => {
-            // Показываем ответ только если:
-            // 1. Он выбран для этого вопроса, ИЛИ
-            // 2. Он еще не использован в других вопросах
-            const isUsed = usedAnswers.includes(answer) && answer !== userAnswer;
             const isSelected = userAnswer === answer;
-            
-            if (!isUsed || isSelected) {
-                optionsHTML += `<option value="${answer}" ${isSelected ? 'selected' : ''}>${answer}</option>`;
-            }
+            optionsHTML += `<option value="${answer}" ${isSelected ? 'selected' : ''}>${answer}</option>`;
         });
         
         matchingHTML += `
