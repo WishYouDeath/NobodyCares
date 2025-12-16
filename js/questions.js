@@ -2166,9 +2166,3 @@ const sampleQuestions = [
 }
 
 ];
-
-function getImagePath(imageName) {
-    if (imageName && imageName.startsWith('images/questions/')) {
-        return imageName;
-    }
-}

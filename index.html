@@ -31,11 +31,15 @@
                 </div>
             </div>
         </div>
-        <div class="final-test-controls">
+
+        <div class="Test-controls">
             <button id="generate-final-test-btn" class="btn btn-primary">Сгенерировать итоговый тест</button>
             <button id="return-to-training-btn" class="btn btn-secondary hidden">Вернуться к тренировке</button>
+            <button id="exam-test-btn" class="btn btn-primary">Вопросы прошлых лет</button>
+            <button id="return-from-exam-btn" class="btn btn-secondary hidden">Вернуться к тренировке</button>
         </div>
-        <div id="test-section" class="hidden">
+
+        <div id="test-section">
             <div class="controls">
                 <button id="shuffle-btn" class="btn btn-secondary">Перемешать вопросы</button>
                 <button id="reset-btn" class="btn btn-secondary">Сбросить ответы</button>
@@ -84,6 +88,7 @@
     </div>
 
     <script src="js/questions.js"></script>
+    <script src="js/exam_test.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

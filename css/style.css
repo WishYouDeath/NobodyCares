@@ -443,3 +443,15 @@ h1 {
     font-weight: bold;
     border-left: 5px solid #3498db;
 }
+
+.Test-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.hidden {
+    display: none !important;
+}

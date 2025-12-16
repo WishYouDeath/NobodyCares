@@ -1,3 +1,4 @@
+const STORAGE_KEY = 'test_mode';
 function shuffleArray(array) {
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -10,6 +11,8 @@ function shuffleArray(array) {
 let questions = [...sampleQuestions];
 let userAnswers = {};
 let questionStates = {};
+let isExamTest = false;
+let examQuestions = [];
 
 const questionsContainer = document.getElementById('questions-container');
 const shuffleBtn = document.getElementById('shuffle-btn');
@@ -37,7 +40,41 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeQuestionStates();
     displayQuestions();
     updateStats();
+    checkModeOnLoad();  // Добавьте этот вызов
 });
+
+function saveModeToStorage() {
+    const modeData = {
+        mode: getCurrentMode(),
+        timestamp: Date.now()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(modeData));
+}
+
+function loadModeFromStorage() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return null;
+    
+    try {
+        const modeData = JSON.parse(saved);
+        // Проверяем, не устарели ли данные (например, больше часа)
+        const oneHour = 60 * 60 * 1000;
+        if (Date.now() - modeData.timestamp > oneHour) {
+            localStorage.removeItem(STORAGE_KEY);
+            return null;
+        }
+        return modeData.mode;
+    } catch (e) {
+        console.error('Ошибка при загрузке режима:', e);
+        return null;
+    }
+}
+
+function getCurrentMode() {
+    if (isFinalTest) return 'final-test';
+    if (isExamTest) return 'exam-test';
+    return 'training';
+}
 
 function initializeEventListeners() {
     shuffleBtn.addEventListener('click', shuffleQuestions);
@@ -45,9 +82,13 @@ function initializeEventListeners() {
     resetBtn.addEventListener('click', resetAnswers);
     resetBottomBtn.addEventListener('click', resetAnswers);
     
-    // Новые кнопки
+    // Существующие кнопки итогового теста
     document.getElementById('generate-final-test-btn').addEventListener('click', generateFinalTest);
     document.getElementById('return-to-training-btn').addEventListener('click', returnToTraining);
+    
+    // Новые кнопки для вопросов прошлых лет
+    document.getElementById('exam-test-btn').addEventListener('click', startExamTest);
+    document.getElementById('return-from-exam-btn').addEventListener('click', returnFromExamTest);
 }
 
 function initializeQuestionStates() {
@@ -80,6 +121,7 @@ function initializeQuestionStates() {
 
 // Функция для генерации итогового теста
 function generateFinalTest() {
+    isExamTest = false; // Добавьте эту строку
     // Определяем темы и их диапазоны
     const topics = [
         { name: 'Тема 1', start: 1, end: 26 },
@@ -151,19 +193,131 @@ function generateFinalTest() {
     updateUIForFinalTest();
     displayQuestions();
     updateStats();
+    saveModeToStorage();
+}
+
+function getImagePath(imageName) {
+    if (!imageName) return '';
+    
+    // Если путь уже полный, возвращаем как есть
+    if (imageName.startsWith('http://') || 
+        imageName.startsWith('https://') ||
+        imageName.startsWith('/') ||
+        imageName.startsWith('./') ||
+        imageName.startsWith('../')) {
+        return imageName;
+    }
+    
+    // Проверяем разные варианты путей
+    if (imageName.startsWith('images/questions/') || 
+        imageName.startsWith('images/past_years/')) {
+        return imageName;
+    }
+    
+    // Если путь содержит только имя файла, добавляем базовый путь
+    if (imageName.includes('.jpg') || imageName.includes('.png') || imageName.includes('.gif')) {
+        return 'images/past_years/' + imageName;
+    }
+    
+    return imageName;
 }
 
 // Функция для возврата к тренировке
 function returnToTraining() {
     isFinalTest = false;
+    isExamTest = false;
     questions = [...allQuestions];
     
     // Сбрасываем ответы и статистику
     resetAnswers();
+    
+    updateUIForTraining();
+    displayQuestions();
+    updateStats();
+
+    saveModeToStorage();
+}
+
+function startExamTest() {
+    // Проверяем, загружен ли файл с вопросами
+    if (typeof examQuestionsData === 'undefined') {
+        alert('Файл с вопросами прошлых лет не загружен!');
+        return;
+    }
+    
+    isExamTest = true;
+    isFinalTest = false;
+    
+    // Загружаем вопросы из exam_test.js
+    examQuestions = [...examQuestionsData];
+    questions = examQuestions;
+    
+    // ПОЛНОСТЬЮ сбрасываем прогресс - это ключевой момент
     userAnswers = {};
+    questionStates = {};
+    
+    // Инициализируем состояния для новых вопросов
     initializeQuestionStates();
     
-    // Обновляем отображение
+    // Обновляем UI
+    updateUIForExamTest();
+    displayQuestions();
+    updateStats(); // Эта функция должна обновить статистику с нуля
+
+    saveModeToStorage();
+}
+
+
+
+function updateUIForExamTest() {
+    const title = document.querySelector('h1');
+    if (title) {
+        title.innerHTML = 'Вопросы прошлых лет';
+    }
+    
+    // Показываем/скрываем кнопки
+    document.getElementById('generate-final-test-btn').classList.add('hidden');
+    document.getElementById('return-to-training-btn').classList.add('hidden');
+    document.getElementById('exam-test-btn').classList.add('hidden');
+    document.getElementById('return-from-exam-btn').classList.remove('hidden');
+    
+    // Добавляем класс для экзамена
+    const testSection = document.getElementById('test-section');
+    if (testSection) {
+        testSection.classList.remove('final-test');
+        testSection.classList.add('exam-test');
+    }
+}
+
+
+// Функция для возврата из теста прошлых лет
+function returnFromExamTest() {
+    isExamTest = false;
+    isFinalTest = false;
+    questions = [...allQuestions];
+    
+    // ПОЛНОСТЬЮ сбрасываем прогресс
+    userAnswers = {};
+    questionStates = {};
+    
+    // Инициализируем состояния для тренировочных вопросов
+    initializeQuestionStates();
+    
+    // Обновляем UI
+    updateUIForTraining();
+    displayQuestions();
+    updateStats();
+
+    saveModeToStorage();
+}
+
+function returnToTraining() {
+    isFinalTest = false;
+    isExamTest = false; // Добавьте эту строку
+    questions = [...allQuestions];
+    
+    resetAnswers();
+    
     updateUIForTraining();
     displayQuestions();
     updateStats();
@@ -171,7 +325,6 @@ function returnToTraining() {
 
 // Обновление UI для итогового теста
 function updateUIForFinalTest() {
-    // Меняем заголовок
     const title = document.querySelector('h1');
     if (title) {
         title.innerHTML = 'Итоговый тест (50 вопросов)';
@@ -180,30 +333,36 @@ function updateUIForFinalTest() {
     // Показываем/скрываем кнопки
     document.getElementById('generate-final-test-btn').classList.add('hidden');
     document.getElementById('return-to-training-btn').classList.remove('hidden');
+    document.getElementById('exam-test-btn').classList.add('hidden');
+    document.getElementById('return-from-exam-btn').classList.add('hidden');
     
-    // Можно также добавить специальный индикатор
+    // Добавляем класс для итогового теста
     const testSection = document.getElementById('test-section');
     if (testSection) {
         testSection.classList.add('final-test');
+        testSection.classList.remove('exam-test');
     }
 }
 
 // Обновление UI для тренировки
 function updateUIForTraining() {
-    // Возвращаем заголовок
     const title = document.querySelector('h1');
     if (title) {
         title.innerHTML = 'Вопросы по сетям';
     }
     
-    // Показываем/скрываем кнопки
+    // Показываем основные кнопки
     document.getElementById('generate-final-test-btn').classList.remove('hidden');
-    document.getElementById('return-to-training-btn').classList.add('hidden');
+    document.getElementById('exam-test-btn').classList.remove('hidden');
     
-    // Убираем индикатор итогового теста
+    // Скрываем кнопки возврата
+    document.getElementById('return-to-training-btn').classList.add('hidden');
+    document.getElementById('return-from-exam-btn').classList.add('hidden');
+    
+    // Убираем специальные классы
     const testSection = document.getElementById('test-section');
     if (testSection) {
-        testSection.classList.remove('final-test');
+        testSection.classList.remove('final-test', 'exam-test');
     }
 }
 
@@ -215,6 +374,11 @@ function displayQuestions() {
         const titleElement = document.createElement('div');
         titleElement.className = 'test-title';
         titleElement.textContent = `Итоговый тест: ${questions.length} вопросов`;
+        questionsContainer.appendChild(titleElement);
+    } else if (isExamTest) {
+        const titleElement = document.createElement('div');
+        titleElement.className = 'test-title';
+        titleElement.textContent = `Вопросы прошлых лет: ${questions.length} вопросов`;
         questionsContainer.appendChild(titleElement);
     }
     
@@ -238,18 +402,18 @@ function createQuestionElement(question, questionState, index) {
         questionElement.classList.add(questionState.correct ? 'correct' : 'incorrect');
     }
     
-    // Показываем оригинальный номер вопроса в итоговом тесте
+    // Показываем оригинальный номер вопроса
     let questionNumberText;
     if (isFinalTest) {
         questionNumberText = `Вопрос ${index + 1} из ${questions.length} (оригинальный №${question.id})`;
+    } else if (isExamTest) {
+        questionNumberText = `Вопрос ${index + 1} из ${questions.length} (экзаменационный №${question.id})`;
     } else {
         questionNumberText = `Вопрос ${index + 1} из ${questions.length}`;
     }
     
     questionElement.dataset.id = question.id;
-    questionElement.dataset.originalId = question.id;
     
-    // Генерируем HTML с учетом нового формата номера
     const statusInfo = getStatusInfo(questionState);
     
     let questionHTML = `
@@ -711,4 +875,46 @@ function resetAnswers() {
     initializeQuestionStates();
     displayQuestions();
     updateStats();
+}
+
+function checkModeOnLoad() {
+    // Загружаем сохраненный режим
+    const savedMode = loadModeFromStorage();
+    
+    // Показываем блок с вопросами
+    const testSection = document.getElementById('test-section');
+    if (testSection) {
+        testSection.classList.remove('hidden');
+    }
+    
+    // Восстанавливаем режим, если он был сохранен
+    if (savedMode) {
+        try {
+            switch(savedMode) {
+                case 'final-test':
+                    // Если был итоговый тест, генерируем его заново
+                    generateFinalTest();
+                    break;
+                case 'exam-test':
+                    // Если был экзамен, проверяем доступность файла
+                    if (typeof examQuestionsData !== 'undefined' && examQuestionsData.length > 0) {
+                        startExamTest();
+                    } else {
+                        console.warn('Файл с вопросами прошлых лет не загружен, переключаемся в режим тренировки');
+                        updateUIForTraining();
+                    }
+                    break;
+                case 'training':
+                    // Уже в режиме тренировки по умолчанию
+                    updateUIForTraining();
+                    break;
+            }
+        } catch (error) {
+            console.error('Ошибка при восстановлении режима:', error);
+            updateUIForTraining();
+        }
+    } else {
+        // Если нет сохраненного режима, показываем тренировку
+        updateUIForTraining();
+    }
 }
