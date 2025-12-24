@@ -102,9 +102,9 @@ const examQuestionsData = [
     "type": "single",
     "text": "Какой роли порта нет в STP?",
     "options": [
-      { "text": "Альтернативный порт (Alternate port)", "correct": true },
+      { "text": "Альтернативный порт (Alternate port)", "correct": false },
       { "text": "Назначенный порт (Designated port)", "correct": false },
-      { "text": "Неназначенный порт (Non-designated Port)", "correct": false },
+      { "text": "Неназначенный порт (Non-designated Port)", "correct": true },
       { "text": "Корневой порт (Root port)", "correct": false }
     ]
   },
