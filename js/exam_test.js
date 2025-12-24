@@ -100,11 +100,11 @@ const examQuestionsData = [
   {
     "id": 1009,
     "type": "single",
-    "text": "Какой роли порта нет в STP?",
+    "text": "Какая роль порта появилась в версии RSTP?",
     "options": [
-      { "text": "Альтернативный порт (Alternate port)", "correct": false },
+      { "text": "Альтернативный порт (Alternate port)", "correct": true },
       { "text": "Назначенный порт (Designated port)", "correct": false },
-      { "text": "Неназначенный порт (Non-designated Port)", "correct": true },
+      { "text": "Неназначенный порт (Non-designated Port)", "correct": false },
       { "text": "Корневой порт (Root port)", "correct": false }
     ]
   },
